@@ -3,6 +3,7 @@ automation/*.json
 automation/chapters/
 automation/ch/
 automation/md/
+automation/folder_id.txt
 
 gdocsync/*.exe
 gdocsync/*.json

@@ -6,7 +6,7 @@ import "fs"
 import "utils"
 
 
-const FOLDER_ID = "-"
+const FOLDER_ID = embed("folder_id.txt")
 const EXE = "gdocsync"
 
 fn sync() {
@@ -23,11 +23,25 @@ fn convert() {
 	println("Done")
 }
 
+fn get_vol(idx) {
+	idx = strings.parse_float(idx, 10)
+	if idx >= 0 && idx <= 19 {
+		return 1
+	} 
+	else if idx >= 20 && idx <= 36 {
+		return 2
+	}
+	return 3
+}
+
 fn header(body, title) {
+	idx := utils.parse_idx(title)
+	vol := get_vol(idx)
+	// debug(vol)
 	head := `---
 title: "${title}"
-chapter: "${utils.parse_idx(title)}"
-volume: 1
+chapter: "${idx}"
+volume: ${vol}
 date: "2026-09-18"
 description: "${title}"
 drive_id: "-"
