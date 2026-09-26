@@ -6,7 +6,7 @@ import "fs"
 import "utils"
 
 
-const FOLDER_ID = "<ENTER DRIVE FOLDER ID>"
+const FOLDER_ID = "12cqWHMWCpeUOfbCu81mD7e5iSwluX6CA"
 const EXE = "gdocsync"
 
 fn sync() {
@@ -52,13 +52,30 @@ fn trim() {
 	
 }
 
+fn replace() {
+	p := "../website/src/content/chapters"
+	if fs.exists(p) {
+		os.remove_all(p)
+	}
+	fs.mkdir(p)
+	for file in fs.readdir("chapters") {
+		d := path.join(p, file.name)
+		fs.copy(path.join("chapters", file.name), d)
+		println(d)
+	}
+}
+
+
+// replace()
+// os.exit(0)
 // convert()
 // trim()
 println("[Help]")
 println("1) sync")
 println("2) convert")
 println("3) trim")
-println("4) exit")
+println("4) replace")
+println("5) exit")
 println("*) Then copy the chapters folder into your web (astro) project.")
 println("")
 print("input>")
@@ -74,6 +91,9 @@ for {
 	}	
 	else if input == "trim" {
 		trim()
+	}
+	else if input == "replace" {
+		replace()
 	}	
 	else if input == "exit" {
 		os.exit(0)
