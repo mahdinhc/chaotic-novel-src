@@ -1,0 +1,17 @@
+---
+interface Props {
+  current?: "home" | "about";
+}
+const { current } = Astro.props;
+---
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/">
+      Chaötic!
+    </a>
+    <nav aria-label="Main">
+      <a href="/" aria-current={current === "home" ? "page" : undefined}>Chapters</a>
+      <a href="/about" aria-current={current === "about" ? "page" : undefined}>About</a>
+    </nav>
+  </div>
+</header>

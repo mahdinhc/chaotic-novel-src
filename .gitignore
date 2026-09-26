@@ -1,0 +1,12 @@
+automation/*.exe
+automation/*.json
+automation/chapters/
+automation/ch/
+automation/md/
+
+gdocsync/*.exe
+gdocsync/*.json
+
+website/dist/
+website/node_modules/
+website/src/content/chapters/*.md

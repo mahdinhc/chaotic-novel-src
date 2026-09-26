@@ -1,0 +1,45 @@
+---
+import { getCollection } from 'astro:content';
+import ChapterLayout from '../../layouts/ChapterLayout.astro';
+
+export async function getStaticPaths() {
+  const chapters = await getCollection('chapters');
+
+  // Sort by the numeric chapter value so "2.5" sits between "2" and "3"
+  const sorted = [...chapters].sort(
+    (a, b) => parseFloat(a.data.chapter) - parseFloat(b.data.chapter)
+  );
+
+  return sorted.map((entry, i) => {
+    const prevEntry = sorted[i - 1];
+    const nextEntry = sorted[i + 1];
+
+    return {
+      params: { slug: entry.slug },
+      props: {
+        entry,
+        prev: prevEntry
+          ? { slug: prevEntry.slug, label: `Ch. ${prevEntry.data.chapter}` }
+          : null,
+        next: nextEntry
+          ? { slug: nextEntry.slug, label: `Ch. ${nextEntry.data.chapter}` }
+          : null,
+      },
+    };
+  });
+}
+
+const { entry, prev, next } = Astro.props;
+const { Content } = await entry.render();
+---
+<ChapterLayout
+  title={entry.data.title}
+  chapter={entry.data.chapter}
+  volume={entry.data.volume}
+  description={entry.data.description}
+  slug={entry.slug}
+  prev={prev}
+  next={next}
+>
+  <Content />
+</ChapterLayout>

@@ -1,0 +1,34 @@
+---
+interface Props {
+  pageTitle: string;
+  description: string;
+  canonicalURL: URL;
+  ogType?: "website" | "article";
+}
+const { pageTitle, description, canonicalURL, ogType = "website" } = Astro.props;
+---
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<title>{pageTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonicalURL} />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<meta name="theme-color" content="#16131c" />
+
+<!-- Open Graph -->
+<meta property="og:title" content={pageTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:type" content={ogType} />
+<meta property="og:url" content={canonicalURL} />
+<meta property="og:site_name" content="Chaötic!" />
+
+<!-- Twitter card -->
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content={pageTitle} />
+<meta name="twitter:description" content={description} />
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet" />

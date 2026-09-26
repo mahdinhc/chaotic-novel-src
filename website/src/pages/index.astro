@@ -1,0 +1,95 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import SiteHead from '../components/SiteHead.astro';
+import { getCollection } from 'astro:content';
+
+const chapters = await getCollection('chapters');
+const sorted = [...chapters].sort(
+  (a, b) => parseFloat(b.data.chapter) - parseFloat(a.data.chapter)
+);
+const latest = sorted[0];
+const first = sorted[sorted.length - 1];
+
+const volumes = [...new Set(sorted.map((c) => c.data.volume))].sort((a, b) => b - a);
+
+const siteName = 'Chaötic!';
+const description = `
+On an unlucky summer evening, highschool student, Tokio Yukawa finds himself caught in a bizarre kidnapping - not by kidnappers, but by a group of overly dramatic vigilantes calling themselves The Phantoms. Led by the chaotic and theatrical Shina Yatoizawa, this quirky "organization" battles a secret terrorist group known as "Abyss" from the shadows.
+
+After a failed over-the-top villain introduction, Shina finally reveals their real intention: They want Tokio to join them - not as a hostage, but as their mad scientist, building the weapons they need to fight evil. Flattered by the rare praise for his love of science, Tokio agrees, setting the stage for a chaotic new chapter in his life.
+
+Now, surrounded by oddballs like Blade, Eyepatch, and Memeko, Tokio embraces his new identity as Maddox, the limit of entropy itself - ready (maybe) to fight hidden threats, build insane inventions, and survive the madness of The Phantoms.
+
+But one thing's clear: this is just the beginning of the weirdest adventure he's ever stumbled into.
+`.trim()
+const canonicalURL = new URL('/', Astro.site);
+
+function formatDate(d: string) {
+  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <SiteHead pageTitle={siteName} description={description} canonicalURL={canonicalURL} ogType="website" />
+  </head>
+  <body>
+    <Header current="home" />
+
+    <main>
+      <section class="hero">
+        <div class="wrap">
+          <p class="hero-kicker">- By Amidorphin</p>
+          <h1 class="hero-title" data-text="Chaötic!">Chaötic!</h1>
+		  <br />
+          <span class="hero-tagline">{description}</span>
+          <div class="hero-actions">
+            {first && (
+              <a class="btn btn-primary" href={`/chapters/${first.slug}`}>Start reading</a>
+            )}
+            {latest && (
+              <a class="btn btn-ghost" href={`/chapters/${latest.slug}`}>
+                Latest — Ch. {latest.data.chapter}
+              </a>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {volumes.map((vol) => {
+        const inVolume = sorted.filter((c) => c.data.volume === vol);
+        return (
+          <section class="toc-section">
+            <div class="wrap">
+              <h2 class="toc-heading">Volume {vol}</h2>
+              <ol class="toc-list">
+                {inVolume.map((entry) => (
+                  <li class="toc-row">
+                    <span class="toc-num">{entry.data.chapter}</span>
+                    <span class="toc-main">
+                      <a href={`/chapters/${entry.slug}`}>{entry.data.title}</a>
+                      <p class="toc-desc">{entry.data.description}</p>
+                    </span>
+                    <span class="toc-date">{formatDate(entry.data.date)}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </section>
+        );
+      })}
+
+      {sorted.length === 0 && (
+        <section class="toc-section">
+          <div class="wrap">
+            <p class="toc-empty">No chapters published yet — check back soon.</p>
+          </div>
+        </section>
+      )}
+    </main>
+
+    <Footer />
+  </body>
+</html>
