@@ -7,6 +7,7 @@ automation/folder_id.txt
 
 gdocsync/*.exe
 gdocsync/*.json
+gdocsync/output
 
 website/dist/
 website/node_modules/

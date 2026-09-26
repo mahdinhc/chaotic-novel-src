@@ -1,13 +1,18 @@
 import { readline } from "bufio"
 import "strings"
+import "json"
 import "os"
 import "path"
 import "fs"
 import "utils"
 
-
 const FOLDER_ID = embed("folder_id.txt")
 const EXE = "gdocsync"
+var metadata = {}
+
+if fs.exists("ch/__metadata.json") {
+	metadata = json.decode(fs.readfile("ch/__metadata.json")).files || {}
+}
 
 fn sync() {
 	cmd := os.exec(EXE, "sync", FOLDER_ID, "--output", "ch")
@@ -34,18 +39,24 @@ fn get_vol(idx) {
 	return 3
 }
 
-fn header(body, title) {
+fn header(body, title, name) {
+	name = strings.trim_suffix(name, ".md") + ".docx"
+	var date = "-"
+	var modified = "-"
+	if metadata[name] != null {
+		date = metadata[name].createdTime || "-"
+		modified = metadata[name].modifiedTime || "-"
+	}
 	idx := utils.parse_idx(title)
 	vol := get_vol(idx)
-	// debug(vol)
 	head := `---
 title: "${title}"
 chapter: "${idx}"
 volume: ${vol}
-date: "2026-09-18"
+date: "${date}"
 description: "${title}"
 drive_id: "-"
-modified: "2026-09-18T12:49:19.804Z"
+modified: "${modified}"
 ---`
 	
 	return head + "\n" + body
@@ -60,7 +71,7 @@ fn trim() {
 		// println(file.title)
 		out := path.join("chapters", utils.slug(ch.title) + ".md") 
 		println(out)
-		fs.writefile(out, header(ch.body, ch.title))
+		fs.writefile(out, header(ch.body, ch.title, file.name))
 		
 	}
 	

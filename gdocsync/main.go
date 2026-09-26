@@ -37,6 +37,11 @@ const (
 
 	defaultOutput = "output"
 
+	// metadataFileName is written into the sync output directory and
+	// contains metadata for every successfully synced file, keyed by
+	// output filename.
+	metadataFileName = "__metadata.json"
+
 	// IMPORTANT:
 	// This application can only read/download Drive content.
 	Scope = drive.DriveReadonlyScope
@@ -44,6 +49,12 @@ const (
 	googleDocMime = "application/vnd.google-apps.document"
 	docxMime      = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 	folderMime    = "application/vnd.google-apps.folder"
+
+	// fileFields is the list of Drive File fields requested for each
+	// document. Only the fields we actually use are requested here.
+	fileFields = "nextPageToken,files(" +
+		"id,name,mimeType,createdTime,modifiedTime,version" +
+		")"
 )
 
 var (
@@ -92,6 +103,7 @@ type SyncState struct {
 type FileState struct {
 	ID           string `json:"id"`
 	Name         string `json:"name"`
+	CreatedTime  string `json:"created_time"`
 	ModifiedTime string `json:"modified_time"`
 	Output       string `json:"output"`
 }
@@ -99,8 +111,31 @@ type FileState struct {
 type DriveDocument struct {
 	ID           string
 	Name         string
+	CreatedTime  string
 	ModifiedTime string
 	MimeType     string
+	Version      int64
+
+	// Raw holds the full metadata returned by the Drive API.
+	Raw *drive.File
+}
+
+// FileMetadata is the per-file metadata written into __metadata.json.
+type FileMetadata struct {
+	Name         string `json:"name"`
+	MimeType     string `json:"mimeType"`
+	CreatedTime  string `json:"createdTime"`
+	ModifiedTime string `json:"modifiedTime"`
+	Version      int64  `json:"version"`
+}
+
+// MetadataBundle is the structure written to __metadata.json inside the
+// output directory. Files is keyed by output filename (e.g. "chapter-1.docx").
+type MetadataBundle struct {
+	ExportedAt string                  `json:"exported_at"`
+	App        string                  `json:"app"`
+	Version    string                  `json:"version"`
+	Files      map[string]FileMetadata `json:"files"`
 }
 
 /* -------------------------------------------------------------------------- */
@@ -167,6 +202,9 @@ Commands:
   sync
       Download Google Docs from a Drive folder as .docx files.
       Records downloaded files in a state file inside the app directory.
+      Also writes %s into the output directory with metadata
+      (name, mimeType, createdTime, modifiedTime, version) for every
+      successfully synced file, keyed by output filename.
 
   convert
       Convert .docx files in a directory to Markdown using Pandoc.
@@ -220,7 +258,7 @@ Examples:
   %s convert chapters --output markdown
   %s sync ABC123 --force
   %s sync ABC123 --dry-run
-  
+
 `, appName, version,
 		appName,
 		appName,
@@ -228,6 +266,7 @@ Examples:
 		appName,
 		appName,
 		appName,
+		metadataFileName,
 		defaultOutput,
 		appName,
 		appName,
@@ -491,6 +530,10 @@ func cmdSync(args []string) {
 		}
 	}
 
+	// metadata collects one entry per file that successfully ends up on
+	// disk, keyed by output filename.
+	metadata := make(map[string]FileMetadata)
+
 	var downloaded int
 	var skipped int
 	var failed int
@@ -516,6 +559,15 @@ func cmdSync(args []string) {
 		if unchanged && !*force {
 			fmt.Println("         unchanged")
 			skipped++
+
+			metadata[outputName] = FileMetadata{
+				Name:         doc.Name,
+				MimeType:     doc.MimeType,
+				CreatedTime:  doc.CreatedTime,
+				ModifiedTime: doc.ModifiedTime,
+				Version:      doc.Version,
+			}
+
 			continue
 		}
 
@@ -544,8 +596,17 @@ func cmdSync(args []string) {
 		state.Files[doc.ID] = FileState{
 			ID:           doc.ID,
 			Name:         doc.Name,
+			CreatedTime:  doc.CreatedTime,
 			ModifiedTime: doc.ModifiedTime,
 			Output:       outputName,
+		}
+
+		metadata[outputName] = FileMetadata{
+			Name:         doc.Name,
+			MimeType:     doc.MimeType,
+			CreatedTime:  doc.CreatedTime,
+			ModifiedTime: doc.ModifiedTime,
+			Version:      doc.Version,
 		}
 
 		downloaded++
@@ -557,6 +618,10 @@ func cmdSync(args []string) {
 		if err := saveState(statePath, state); err != nil {
 			log.Fatalf("Unable to save state: %v", err)
 		}
+
+		if err := writeMetadata(*outputDir, metadata); err != nil {
+			log.Fatalf("Unable to write %s: %v", metadataFileName, err)
+		}
 	}
 
 	fmt.Println()
@@ -564,6 +629,13 @@ func cmdSync(args []string) {
 	fmt.Printf("  Downloaded: %d\n", downloaded)
 	fmt.Printf("  Skipped:    %d\n", skipped)
 	fmt.Printf("  Failed:     %d\n", failed)
+
+	if !*dryRun {
+		fmt.Printf(
+			"  Metadata:   %s\n",
+			filepath.Join(*outputDir, metadataFileName),
+		)
+	}
 
 	if failed > 0 {
 		os.Exit(1)
@@ -726,6 +798,36 @@ func convertDocxToMarkdown(
 }
 
 /* -------------------------------------------------------------------------- */
+/* METADATA                                                                  */
+/* -------------------------------------------------------------------------- */
+
+// writeMetadata writes __metadata.json into outputDir. The Files map is
+// keyed by output filename and contains only the files that were
+// successfully synced.
+func writeMetadata(
+	outputDir string,
+	files map[string]FileMetadata,
+) error {
+
+	bundle := MetadataBundle{
+		ExportedAt: time.Now().UTC().Format(time.RFC3339),
+		App:        appName,
+		Version:    version,
+		Files:      files,
+	}
+
+	data, err := json.MarshalIndent(bundle, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return atomicWrite(
+		filepath.Join(outputDir, metadataFileName),
+		append(data, '\n'),
+	)
+}
+
+/* -------------------------------------------------------------------------- */
 /* GOOGLE DRIVE                                                              */
 /* -------------------------------------------------------------------------- */
 
@@ -749,9 +851,7 @@ func listDocuments(
 		call := service.Files.List().
 			Q(query).
 			PageSize(100).
-			Fields(
-				"nextPageToken,files(id,name,mimeType,modifiedTime)",
-			)
+			Fields(fileFields)
 
 		if pageToken != "" {
 			call.PageToken(pageToken)
@@ -771,8 +871,11 @@ func listDocuments(
 				DriveDocument{
 					ID:           file.Id,
 					Name:         file.Name,
+					CreatedTime:  file.CreatedTime,
 					ModifiedTime: file.ModifiedTime,
 					MimeType:     file.MimeType,
+					Version:      file.Version,
+					Raw:          file,
 				},
 			)
 		}
