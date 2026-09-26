@@ -15,7 +15,10 @@ const first = sorted[sorted.length - 1];
 const volumes = [...new Set(sorted.map((c) => c.data.volume))].sort((a, b) => b - a);
 
 const siteName = 'Chaötic!';
-const description = `
+// Short, search-snippet-length summary for <meta name="description"> and social cards (~155 chars).
+const description = "Chaötic! is a free serialized web novel: a chaotic vigilante squad recruits a bored high schooler to fight a shadow terrorist organization.";
+// Longer blurb shown in the hero section on the page itself.
+const heroTagline = `
 On an unlucky summer evening, highschool student, Tokio Yukawa finds himself caught in a bizarre kidnapping - not by kidnappers, but by a group of overly dramatic vigilantes calling themselves The Phantoms. Led by the chaotic and theatrical Shina Yatoizawa, this quirky "organization" battles a secret terrorist group known as "Abyss" from the shadows.
 
 After a failed over-the-top villain introduction, Shina finally reveals their real intention: They want Tokio to join them - not as a hostage, but as their mad scientist, building the weapons they need to fight evil. Flattered by the rare praise for his love of science, Tokio agrees, setting the stage for a chaotic new chapter in his life.
@@ -26,6 +29,20 @@ But one thing's clear: this is just the beginning of the weirdest adventure he's
 `.trim()
 const canonicalURL = new URL('/', Astro.site);
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Book',
+  name: siteName,
+  alternateName: 'CHAÖTIC!',
+  author: { '@type': 'Person', name: 'Amidorphin' },
+  url: canonicalURL.toString(),
+  genre: ['Action', 'Comedy', 'Web Novel'],
+  description: description,
+  inLanguage: 'en',
+  bookFormat: 'https://schema.org/EBook',
+  isAccessibleForFree: true,
+};
+
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
@@ -33,7 +50,8 @@ function formatDate(d: string) {
 <!doctype html>
 <html lang="en">
   <head>
-    <SiteHead pageTitle={siteName} description={description} canonicalURL={canonicalURL} ogType="website" />
+    <SiteHead pageTitle={`${siteName} — Free Web Novel by Amidorphin`} description={description} canonicalURL={canonicalURL} ogType="website" />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   </head>
   <body>
     <Header current="home" />
@@ -44,7 +62,7 @@ function formatDate(d: string) {
           <p class="hero-kicker">- By Amidorphin</p>
           <h1 class="hero-title" data-text="Chaötic!">Chaötic!</h1>
 		  <br />
-          <span class="hero-tagline">{description}</span>
+          <span class="hero-tagline">{heroTagline}</span>
           <div class="hero-actions">
             {first && (
               <a class="btn btn-primary" href={`/chapters/${first.slug}`}>Start reading</a>

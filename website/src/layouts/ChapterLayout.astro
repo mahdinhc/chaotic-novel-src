@@ -19,11 +19,29 @@ const { title, chapter, volume, description, slug, prev, next } = Astro.props;
 const siteName = 'Chaötic!';
 const pageTitle = `Chapter ${chapter}: ${title} | ${siteName}`;
 const canonicalURL = new URL(`/chapters/${slug}`, Astro.site);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Chapter',
+  name: `Chapter ${chapter}: ${title}`,
+  isPartOf: {
+    '@type': 'Book',
+    name: siteName,
+    url: new URL('/', Astro.site).toString(),
+  },
+  position: chapter,
+  author: { '@type': 'Person', name: 'Amidorphin' },
+  url: canonicalURL.toString(),
+  description,
+  inLanguage: 'en',
+  isAccessibleForFree: true,
+};
 ---
 <!doctype html>
 <html lang="en">
   <head>
     <SiteHead pageTitle={pageTitle} description={description} canonicalURL={canonicalURL} ogType="article" />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   </head>
   <body>
     <div class="progress-track" aria-hidden="true">
