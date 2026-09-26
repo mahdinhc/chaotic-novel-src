@@ -6,7 +6,7 @@ import "fs"
 import "utils"
 
 
-const FOLDER_ID = "12cqWHMWCpeUOfbCu81mD7e5iSwluX6CA"
+const FOLDER_ID = "-"
 const EXE = "gdocsync"
 
 fn sync() {
@@ -76,11 +76,15 @@ println("2) convert")
 println("3) trim")
 println("4) replace")
 println("5) exit")
-println("*) Then copy the chapters folder into your web (astro) project.")
 println("")
 print("input>")
 for {
 	input := readline() |> strings.trim_space
+	println("1) sync")
+	println("2) convert")
+	println("3) trim")
+	println("4) replace")
+	println("5) exit")
 	print("input>")
 	
 	if input == "sync" {
