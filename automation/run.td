@@ -76,30 +76,40 @@ println("2) convert")
 println("3) trim")
 println("4) replace")
 println("5) exit")
+println("*) auto")
 println("")
 print("input>")
 for {
 	input := readline() |> strings.trim_space
+	println("")
 	println("1) sync")
 	println("2) convert")
 	println("3) trim")
 	println("4) replace")
 	println("5) exit")
+	println("*) auto")
+	println("")
 	print("input>")
 	
-	if input == "sync" {
+	if input == "sync" || input == "1" {
 		sync()
 	}	
-	else if input == "convert" {
+	else if input == "convert" || input == "2" {
 		convert()
 	}	
-	else if input == "trim" {
+	else if input == "trim" || input == "3" {
 		trim()
 	}
-	else if input == "replace" {
+	else if input == "replace" || input == "4" {
 		replace()
 	}	
-	else if input == "exit" {
+	else if input == "exit" || input == "5" {
 		os.exit(0)
+	}	
+	else if input == "auto" || input == "*" {
+		sync()
+		convert()
+		trim()
+		replace()
 	}
 }
